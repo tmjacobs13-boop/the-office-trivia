@@ -200,6 +200,35 @@ input[type="text"]:focus {
   background: #f5c93b;
 }
 
+.solo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+}
+.btn.ghost:hover:not(:disabled) {
+  background: var(--bg-2);
+  color: var(--text);
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.solo-mode .score-card.opponent-card {
+  display: none;
+}
+.solo-mode .scoreboard {
+  grid-template-columns: 1fr auto;
+}
+
 .error {
   color: var(--danger);
   font-size: 13px;

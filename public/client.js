@@ -8,6 +8,7 @@ const state = {
   code: null,
   scores: { you: 0, opp: 0 },
   isChooser: false,
+  isSolo: false,
   timerInterval: null,
   timerEndAt: null,
   hasLocked: false,
@@ -64,6 +65,21 @@ $('btn-join').addEventListener('click', () => {
     $('room-code-display').textContent = res.code;
     $('room-indicator').classList.remove('hidden');
     // Game starts in 1.5s via server
+  });
+});
+
+$('btn-solo').addEventListener('click', () => {
+  const name = $('name-input').value.trim() || 'Player';
+  setError('');
+  socket.emit('create-solo', { name }, (res) => {
+    if (!res.success) { setError(res.error || 'Could not start solo'); return; }
+    state.code = res.code;
+    state.you = res.you;
+    state.isSolo = true;
+    $('room-code-display').textContent = 'SOLO';
+    $('room-indicator').classList.remove('hidden');
+    document.body.classList.add('solo-mode');
+    // Game starts via server
   });
 });
 
@@ -156,8 +172,11 @@ function lockAnswer(choice, btn) {
 }
 
 socket.on('player-locked', ({ playerId }) => {
+  if (state.isSolo) {
+    $('lock-status').textContent = 'Revealing…';
+    return;
+  }
   if (playerId !== state.you) {
-    const cur = $('lock-status').textContent;
     if (state.hasLocked) {
       $('lock-status').textContent = 'Both locked — revealing…';
     } else {
@@ -201,10 +220,15 @@ socket.on('reveal', ({ correctIndex, correctText, results, tier, scores }) => {
 socket.on('game-over', ({ winnerId, winnerName, scores }) => {
   showScreen('gameover');
   const youWin = winnerId === state.you;
-  $('gameover-headline').textContent = youWin ? '🏆 You Win!' : `${winnerName} wins`;
-  $('gameover-tagline').textContent = youWin
-    ? "World's Best Boss material."
-    : "Identity theft is not a joke, Jim!";
+  if (state.isSolo) {
+    $('gameover-headline').textContent = '🏆 500 reached!';
+    $('gameover-tagline').textContent = "World's Best Boss material.";
+  } else {
+    $('gameover-headline').textContent = youWin ? '🏆 You Win!' : `${winnerName} wins`;
+    $('gameover-tagline').textContent = youWin
+      ? "World's Best Boss material."
+      : "Identity theft is not a joke, Jim!";
+  }
   $('final-scores').innerHTML = scores
     .slice()
     .sort((a, b) => b.score - a.score)
@@ -219,6 +243,7 @@ socket.on('game-over', ({ winnerId, winnerName, scores }) => {
 });
 
 socket.on('opponent-left', () => {
+  if (state.isSolo) return;
   toast('Opponent disconnected');
   setTimeout(() => location.reload(), 2000);
 });
@@ -237,9 +262,10 @@ function updateScoreLabels(scores) {
   const you = scores.find(s => s.id === state.you);
   const opp = scores.find(s => s.id !== state.you);
   if (you) {
-    $('score-you').querySelector('.score-name').textContent = `${you.name} (you)`;
+    $('score-you').querySelector('.score-name').textContent = state.isSolo ? you.name : `${you.name} (you)`;
     $('score-you').querySelector('.score-value').textContent = you.score;
   }
+  if (state.isSolo) return;
   if (opp) {
     $('score-opp').querySelector('.score-name').textContent = opp.name;
     $('score-opp').querySelector('.score-value').textContent = opp.score;
