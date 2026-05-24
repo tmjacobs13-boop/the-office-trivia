@@ -67,6 +67,11 @@ $('btn-join').addEventListener('click', () => {
   });
 });
 
+function buildInviteText(code) {
+  const url = `${location.origin}/?code=${code}`;
+  return `Join my Office Trivia game! ${url}`;
+}
+
 $('btn-copy-code').addEventListener('click', () => {
   if (!state.code) return;
   navigator.clipboard.writeText(state.code).then(
@@ -74,6 +79,27 @@ $('btn-copy-code').addEventListener('click', () => {
     () => toast('Copy failed')
   );
 });
+
+$('btn-copy-invite').addEventListener('click', () => {
+  if (!state.code) return;
+  const text = buildInviteText(state.code);
+  navigator.clipboard.writeText(text).then(
+    () => toast('Invite copied — paste it in a text'),
+    () => toast('Copy failed')
+  );
+});
+
+(function prefillCodeFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const code = (params.get('code') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (code.length === 4) {
+    const input = $('join-code-input');
+    if (input) {
+      input.value = code;
+      setTimeout(() => $('name-input').focus(), 100);
+    }
+  }
+})();
 
 $('join-code-input').addEventListener('input', (e) => {
   e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
