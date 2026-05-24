@@ -13,8 +13,14 @@
     <span class="brand-main">THE OFFICE</span>
     <span class="brand-sub">TRIVIA SHOWDOWN</span>
   </div>
-  <div id="room-indicator" class="room-indicator hidden">
-    Room <span id="room-code-display"></span>
+  <div class="topbar-right">
+    <div class="conn-indicator">
+      <span id="conn-dot" class="conn-dot disconnected"></span>
+      <span id="conn-label" class="conn-label">Connecting…</span>
+    </div>
+    <div id="room-indicator" class="room-indicator hidden">
+      Room <span id="room-code-display"></span>
+    </div>
   </div>
 </header>
 
@@ -37,7 +43,12 @@
           <button id="btn-join" class="btn">Join</button>
         </div>
       </div>
+      <div class="solo-row">
+        <button id="btn-solo" class="btn ghost">Play Solo (Practice)</button>
+        <span class="muted small">No opponent. Race yourself to 500.</span>
+      </div>
       <p id="landing-error" class="error hidden"></p>
+      <p class="muted small wake-note">Server takes ~30s to wake up if it's been idle. Watch the dot in the top right — green = ready.</p>
     </div>
     <p class="footer-note">"I'm not superstitious, but I am a little stitious." — Michael Scott</p>
   </section>
@@ -69,7 +80,7 @@
         <div class="round-num" id="round-num">1</div>
         <div class="round-label">First to 500</div>
       </div>
-      <div class="score-card" id="score-opp">
+      <div class="score-card opponent-card" id="score-opp">
         <div class="score-name">Opponent</div>
         <div class="score-value">0</div>
       </div>

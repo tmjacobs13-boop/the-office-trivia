@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -26,11 +27,12 @@ const WIN_SCORE = 500;
 const SPEED_BONUS = 5;
 const ANSWER_TIMEOUT_MS = 30000;
 const REVEAL_DURATION_MS = 5000;
-const ROOM_TTL_MS = 1000 * 60 * 60 * 2;
+const ROOM_TTL_MS = 1000 * 60 * 60 * 12;
 
 const rooms = new Map();
 
 function tierPoints(tier) { return tier * 10; }
+function newToken() { return crypto.randomBytes(16).toString('hex'); }
 
 function genCode() {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -56,21 +58,23 @@ function pickQuestion(room, tier) {
 }
 
 function publicScores(room) {
-  return room.players.map(p => ({ id: p.id, name: p.name, score: p.score }));
+  return room.players.map(p => ({ token: p.token, name: p.name, score: p.score, connected: p.connected }));
 }
 
 function startNextRound(room) {
-  if (room.players.length < 2) return;
+  const minPlayers = room.isSolo ? 1 : 2;
+  if (room.players.length < minPlayers) return;
   room.roundNum += 1;
   room.lockedAnswers = {};
   room.currentQuestion = null;
-  if (room.roundNum > 1) room.chooserIdx = 1 - room.chooserIdx;
+  if (!room.isSolo && room.roundNum > 1) room.chooserIdx = 1 - room.chooserIdx;
   room.phase = 'tier-pick';
   io.to(room.code).emit('tier-pick-phase', {
-    chooserId: room.players[room.chooserIdx].id,
+    chooserToken: room.players[room.chooserIdx].token,
     chooserName: room.players[room.chooserIdx].name,
     roundNum: room.roundNum,
     scores: publicScores(room),
+    isSolo: !!room.isSolo,
   });
 }
 
@@ -107,33 +111,30 @@ function reveal(room) {
   const points = tierPoints(room.currentTier);
 
   const correctLocks = room.players
-    .map(p => ({ p, lock: room.lockedAnswers[p.id] }))
+    .map(p => ({ p, lock: room.lockedAnswers[p.token] }))
     .filter(({ lock }) => lock && lock.choice === q.correct)
     .sort((a, b) => a.lock.lockTime - b.lock.lockTime);
 
-  const speedBonusId = correctLocks.length > 0 ? correctLocks[0].p.id : null;
+  const speedBonusToken = correctLocks.length > 0 ? correctLocks[0].p.token : null;
 
   const results = room.players.map(p => {
-    const lock = room.lockedAnswers[p.id];
+    const lock = room.lockedAnswers[p.token];
     const wasCorrect = !!(lock && lock.choice === q.correct);
+    const getsSpeedBonus = !room.isSolo && wasCorrect && speedBonusToken === p.token;
     let earned = 0;
     if (wasCorrect) {
       earned += points;
-      if (speedBonusId === p.id && correctLocks.length === 1 && room.players.length > 1) {
-        earned += SPEED_BONUS;
-      } else if (speedBonusId === p.id) {
-        earned += SPEED_BONUS;
-      }
+      if (getsSpeedBonus) earned += SPEED_BONUS;
     }
     p.score += earned;
     return {
-      id: p.id,
+      token: p.token,
       name: p.name,
       choice: lock ? lock.choice : null,
       correct: wasCorrect,
       earned,
       newScore: p.score,
-      speedBonus: speedBonusId === p.id && wasCorrect,
+      speedBonus: getsSpeedBonus,
     };
   });
 
@@ -150,7 +151,7 @@ function reveal(room) {
     room.phase = 'ended';
     setTimeout(() => {
       io.to(room.code).emit('game-over', {
-        winnerId: winner.id,
+        winnerToken: winner.token,
         winnerName: winner.name,
         scores: publicScores(room),
       });
@@ -169,22 +170,24 @@ function cleanupOldRooms() {
     }
   }
 }
-setInterval(cleanupOldRooms, 1000 * 60 * 10);
+setInterval(cleanupOldRooms, 1000 * 60 * 30);
 
-app.get('/healthz', (req, res) => res.json({ ok: true, rooms: rooms.size }));
+app.get('/healthz', (req, res) => res.json({ ok: true, rooms: rooms.size, uptime: process.uptime() }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
   let currentRoom = null;
+  let currentPlayerToken = null;
 
-  socket.on('create-room', ({ name }, cb) => {
+  socket.on('create-room', ({ name, token }, cb) => {
     try {
       const cleanName = String(name || 'Player').trim().slice(0, 24) || 'Player';
+      const playerToken = (typeof token === 'string' && token.length >= 8) ? token : newToken();
       const code = genCode();
       const room = {
         code,
-        players: [{ id: socket.id, name: cleanName, score: 0 }],
+        players: [{ id: socket.id, token: playerToken, name: cleanName, score: 0, connected: true, disconnectedAt: null }],
         chooserIdx: 0,
         roundNum: 0,
         currentQuestion: null,
@@ -193,29 +196,82 @@ io.on('connection', (socket) => {
         usedIds: new Set(),
         timer: null,
         phase: 'waiting',
+        isSolo: false,
         createdAt: Date.now(),
       };
       rooms.set(code, room);
       currentRoom = room;
+      currentPlayerToken = playerToken;
       socket.join(code);
-      cb({ success: true, code, you: socket.id, players: publicScores(room) });
+      cb({ success: true, code, you: playerToken, token: playerToken, players: publicScores(room) });
     } catch (e) {
       cb({ success: false, error: e.message });
     }
   });
 
-  socket.on('join-room', ({ name, code }, cb) => {
+  socket.on('create-solo', ({ name, token }, cb) => {
+    try {
+      const cleanName = String(name || 'Player').trim().slice(0, 24) || 'Player';
+      const playerToken = (typeof token === 'string' && token.length >= 8) ? token : newToken();
+      const code = genCode();
+      const room = {
+        code,
+        players: [{ id: socket.id, token: playerToken, name: cleanName, score: 0, connected: true, disconnectedAt: null }],
+        chooserIdx: 0,
+        roundNum: 0,
+        currentQuestion: null,
+        currentTier: null,
+        lockedAnswers: {},
+        usedIds: new Set(),
+        timer: null,
+        phase: 'waiting',
+        isSolo: true,
+        createdAt: Date.now(),
+      };
+      rooms.set(code, room);
+      currentRoom = room;
+      currentPlayerToken = playerToken;
+      socket.join(code);
+      cb({ success: true, code, you: playerToken, token: playerToken, players: publicScores(room), isSolo: true });
+      setTimeout(() => startNextRound(room), 400);
+    } catch (e) {
+      cb({ success: false, error: e.message });
+    }
+  });
+
+  socket.on('join-room', ({ name, code, token }, cb) => {
     try {
       const cleanName = String(name || 'Player').trim().slice(0, 24) || 'Player';
       const cleanCode = String(code || '').trim().toUpperCase();
       const room = rooms.get(cleanCode);
-      if (!room) return cb({ success: false, error: 'Room not found' });
+      if (!room) return cb({ success: false, error: 'Room not found or expired' });
+      if (room.isSolo) return cb({ success: false, error: 'That room is solo-only' });
+
+      const playerToken = (typeof token === 'string' && token.length >= 8) ? token : newToken();
+
+      const existing = room.players.find(p => p.token === playerToken);
+      if (existing) {
+        existing.id = socket.id;
+        existing.connected = true;
+        existing.disconnectedAt = null;
+        existing.name = cleanName;
+        currentRoom = room;
+        currentPlayerToken = playerToken;
+        socket.join(cleanCode);
+        cb({ success: true, code: cleanCode, you: playerToken, token: playerToken, players: publicScores(room), resumed: true, phase: room.phase, isSolo: !!room.isSolo });
+        io.to(cleanCode).emit('players-update', { players: publicScores(room) });
+        sendStateSnapshot(socket, room);
+        return;
+      }
+
       if (room.players.length >= 2) return cb({ success: false, error: 'Room is full' });
       if (room.phase !== 'waiting') return cb({ success: false, error: 'Game already in progress' });
-      room.players.push({ id: socket.id, name: cleanName, score: 0 });
+
+      room.players.push({ id: socket.id, token: playerToken, name: cleanName, score: 0, connected: true, disconnectedAt: null });
       currentRoom = room;
+      currentPlayerToken = playerToken;
       socket.join(cleanCode);
-      cb({ success: true, code: cleanCode, you: socket.id, players: publicScores(room) });
+      cb({ success: true, code: cleanCode, you: playerToken, token: playerToken, players: publicScores(room) });
       io.to(cleanCode).emit('players-update', { players: publicScores(room) });
       setTimeout(() => startNextRound(room), 1500);
     } catch (e) {
@@ -223,9 +279,67 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('rejoin-room', ({ code, token }, cb) => {
+    try {
+      const cleanCode = String(code || '').trim().toUpperCase();
+      const room = rooms.get(cleanCode);
+      if (!room) return cb({ success: false, error: 'Room not found or expired' });
+      const player = room.players.find(p => p.token === token);
+      if (!player) return cb({ success: false, error: 'You are not in this room' });
+
+      player.id = socket.id;
+      player.connected = true;
+      player.disconnectedAt = null;
+      currentRoom = room;
+      currentPlayerToken = token;
+      socket.join(cleanCode);
+
+      cb({
+        success: true,
+        code: cleanCode,
+        you: token,
+        players: publicScores(room),
+        phase: room.phase,
+        isSolo: !!room.isSolo,
+      });
+      io.to(cleanCode).emit('players-update', { players: publicScores(room) });
+      sendStateSnapshot(socket, room);
+    } catch (e) {
+      cb({ success: false, error: e.message });
+    }
+  });
+
+  function sendStateSnapshot(sock, room) {
+    if (room.phase === 'tier-pick') {
+      sock.emit('tier-pick-phase', {
+        chooserToken: room.players[room.chooserIdx].token,
+        chooserName: room.players[room.chooserIdx].name,
+        roundNum: room.roundNum,
+        scores: publicScores(room),
+        isSolo: !!room.isSolo,
+      });
+    } else if (room.phase === 'answering' && room.currentQuestion) {
+      const elapsed = Date.now() - (room.questionStartTime || Date.now());
+      const remaining = Math.max(1000, ANSWER_TIMEOUT_MS - elapsed);
+      sock.emit('question', {
+        tier: room.currentTier,
+        points: tierPoints(room.currentTier),
+        question: room.currentQuestion.q,
+        choices: room.currentQuestion.choices,
+        timeoutMs: remaining,
+        roundNum: room.roundNum,
+        scores: publicScores(room),
+      });
+    } else if (room.phase === 'reveal') {
+      sock.emit('players-update', { players: publicScores(room) });
+    } else if (room.phase === 'waiting') {
+      sock.emit('players-update', { players: publicScores(room) });
+    }
+  }
+
   socket.on('choose-tier', ({ tier }) => {
     if (!currentRoom || currentRoom.phase !== 'tier-pick') return;
-    if (currentRoom.players[currentRoom.chooserIdx].id !== socket.id) return;
+    if (currentRoom.players[currentRoom.chooserIdx].token !== currentPlayerToken) return;
     const t = parseInt(tier, 10);
     if (!(t >= 1 && t <= 10)) return;
     askQuestion(currentRoom, t);
@@ -233,12 +347,14 @@ io.on('connection', (socket) => {
 
   socket.on('lock-answer', ({ choice }) => {
     if (!currentRoom || currentRoom.phase !== 'answering') return;
-    if (currentRoom.lockedAnswers[socket.id]) return;
+    if (currentRoom.lockedAnswers[currentPlayerToken]) return;
     const c = parseInt(choice, 10);
     if (!(c >= 0 && c <= 3)) return;
-    currentRoom.lockedAnswers[socket.id] = { choice: c, lockTime: Date.now() };
-    io.to(currentRoom.code).emit('player-locked', { playerId: socket.id });
-    if (Object.keys(currentRoom.lockedAnswers).length === currentRoom.players.length) {
+    currentRoom.lockedAnswers[currentPlayerToken] = { choice: c, lockTime: Date.now() };
+    io.to(currentRoom.code).emit('player-locked', { playerToken: currentPlayerToken });
+    const connectedCount = currentRoom.players.filter(p => p.connected).length;
+    const lockedCount = Object.keys(currentRoom.lockedAnswers).length;
+    if (lockedCount >= connectedCount || lockedCount >= currentRoom.players.length) {
       reveal(currentRoom);
     }
   });
@@ -253,14 +369,31 @@ io.on('connection', (socket) => {
     setTimeout(() => startNextRound(currentRoom), 800);
   });
 
-  socket.on('disconnect', () => {
-    if (currentRoom) {
-      currentRoom.players = currentRoom.players.filter(p => p.id !== socket.id);
-      io.to(currentRoom.code).emit('opponent-left', {});
-      if (currentRoom.timer) { clearTimeout(currentRoom.timer); currentRoom.timer = null; }
-      if (currentRoom.players.length === 0) rooms.delete(currentRoom.code);
+  socket.on('leave-room', () => {
+    if (currentRoom && currentPlayerToken) {
+      currentRoom.players = currentRoom.players.filter(p => p.token !== currentPlayerToken);
+      io.to(currentRoom.code).emit('players-update', { players: publicScores(currentRoom) });
+      if (currentRoom.players.length === 0) {
+        if (currentRoom.timer) clearTimeout(currentRoom.timer);
+        rooms.delete(currentRoom.code);
+      }
       currentRoom = null;
+      currentPlayerToken = null;
     }
+  });
+
+  socket.on('disconnect', () => {
+    if (currentRoom && currentPlayerToken) {
+      const player = currentRoom.players.find(p => p.token === currentPlayerToken);
+      if (player) {
+        player.connected = false;
+        player.disconnectedAt = Date.now();
+        io.to(currentRoom.code).emit('player-disconnected', { playerToken: currentPlayerToken });
+        io.to(currentRoom.code).emit('players-update', { players: publicScores(currentRoom) });
+      }
+    }
+    currentRoom = null;
+    currentPlayerToken = null;
   });
 });
 
