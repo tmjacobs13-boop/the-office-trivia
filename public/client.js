@@ -15,6 +15,7 @@ const state = {
 
 const TOKEN_KEY = 'oft_player_token';
 const SESSION_KEY = 'oft_active_session';
+const SESSION_TTL_MS = 1000 * 60 * 60 * 13;
 
 function getOrCreateToken() {
   try {
@@ -32,20 +33,20 @@ const PLAYER_TOKEN = getOrCreateToken();
 
 function saveSession(code, isSolo) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ code, isSolo, ts: Date.now() }));
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ code, isSolo, ts: Date.now() }));
   } catch (e) {}
 }
 function loadSession() {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (Date.now() - s.ts > 1000 * 60 * 60 * 13) return null;
+    if (Date.now() - s.ts > SESSION_TTL_MS) { clearSession(); return null; }
     return s;
   } catch (e) { return null; }
 }
 function clearSession() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
 }
 
 // --- DOM helpers ---
@@ -315,7 +316,13 @@ socket.on('player-locked', ({ playerToken }) => {
   }
 });
 
-socket.on('reveal', ({ correctIndex, correctText, results, tier, scores }) => {
+socket.on('tiebreaker', ({ tiedScore, newThreshold }) => {
+  toast(`Tied at ${tiedScore}! First to ${newThreshold} now wins.`, 4500);
+  const wt = document.querySelector('#round-info-threshold');
+  if (wt) wt.textContent = `First to ${newThreshold}`;
+});
+
+socket.on('reveal', ({ correctIndex, correctText, results, tier, scores, winThreshold }) => {
   stopTimer();
   showPhase('reveal');
   const youResult = results.find(r => r.token === state.you);
@@ -345,9 +352,13 @@ socket.on('reveal', ({ correctIndex, correctText, results, tier, scores }) => {
   }).join('');
 
   updateScoreLabels(scores);
+  if (typeof winThreshold === 'number') {
+    const wt = document.querySelector('#round-info-threshold');
+    if (wt) wt.textContent = `First to ${winThreshold}`;
+  }
 });
 
-socket.on('game-over', ({ winnerToken, winnerName, scores }) => {
+socket.on('game-over', ({ winnerToken, winnerName, scores, finalThreshold }) => {
   clearSession();
   showScreen('gameover');
   const youWin = winnerToken === state.you;

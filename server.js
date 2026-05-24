@@ -24,6 +24,7 @@ function loadQuestions() {
 let QUESTIONS = loadQuestions();
 
 const WIN_SCORE = 500;
+const TIEBREAKER_STEP = 100;
 const SPEED_BONUS = 5;
 const ANSWER_TIMEOUT_MS = 30000;
 const REVEAL_DURATION_MS = 5000;
@@ -144,21 +145,35 @@ function reveal(room) {
     results,
     tier: room.currentTier,
     scores: publicScores(room),
+    winThreshold: room.winThreshold,
   });
 
-  const winner = room.players.find(p => p.score >= WIN_SCORE);
-  if (winner) {
-    room.phase = 'ended';
-    setTimeout(() => {
-      io.to(room.code).emit('game-over', {
-        winnerToken: winner.token,
-        winnerName: winner.name,
-        scores: publicScores(room),
-      });
-    }, REVEAL_DURATION_MS);
-  } else {
-    setTimeout(() => startNextRound(room), REVEAL_DURATION_MS);
+  // Winner = unique player with highest score >= current threshold.
+  // If multiple players are tied AND at/over threshold, raise threshold by 100 and keep playing.
+  const maxScore = Math.max(...room.players.map(p => p.score));
+  if (maxScore >= room.winThreshold) {
+    const leaders = room.players.filter(p => p.score === maxScore);
+    if (leaders.length === 1) {
+      const winner = leaders[0];
+      room.phase = 'ended';
+      setTimeout(() => {
+        io.to(room.code).emit('game-over', {
+          winnerToken: winner.token,
+          winnerName: winner.name,
+          scores: publicScores(room),
+          finalThreshold: room.winThreshold,
+        });
+      }, REVEAL_DURATION_MS);
+      return;
+    }
+    // Tied — extend the target
+    room.winThreshold = Math.ceil((maxScore + 1) / TIEBREAKER_STEP) * TIEBREAKER_STEP;
+    io.to(room.code).emit('tiebreaker', {
+      tiedScore: maxScore,
+      newThreshold: room.winThreshold,
+    });
   }
+  setTimeout(() => startNextRound(room), REVEAL_DURATION_MS);
 }
 
 function cleanupOldRooms() {
@@ -197,6 +212,7 @@ io.on('connection', (socket) => {
         timer: null,
         phase: 'waiting',
         isSolo: false,
+        winThreshold: WIN_SCORE,
         createdAt: Date.now(),
       };
       rooms.set(code, room);
@@ -226,6 +242,7 @@ io.on('connection', (socket) => {
         timer: null,
         phase: 'waiting',
         isSolo: true,
+        winThreshold: WIN_SCORE,
         createdAt: Date.now(),
       };
       rooms.set(code, room);
@@ -365,6 +382,7 @@ io.on('connection', (socket) => {
     currentRoom.roundNum = 0;
     currentRoom.chooserIdx = 0;
     currentRoom.usedIds = new Set();
+    currentRoom.winThreshold = WIN_SCORE;
     io.to(currentRoom.code).emit('players-update', { players: publicScores(currentRoom) });
     setTimeout(() => startNextRound(currentRoom), 800);
   });
