@@ -60,19 +60,17 @@ function publicScores(room) {
 }
 
 function startNextRound(room) {
-  const minPlayers = room.isSolo ? 1 : 2;
-  if (room.players.length < minPlayers) return;
+  if (room.players.length < 2) return;
   room.roundNum += 1;
   room.lockedAnswers = {};
   room.currentQuestion = null;
-  if (!room.isSolo && room.roundNum > 1) room.chooserIdx = 1 - room.chooserIdx;
+  if (room.roundNum > 1) room.chooserIdx = 1 - room.chooserIdx;
   room.phase = 'tier-pick';
   io.to(room.code).emit('tier-pick-phase', {
     chooserId: room.players[room.chooserIdx].id,
     chooserName: room.players[room.chooserIdx].name,
     roundNum: room.roundNum,
     scores: publicScores(room),
-    isSolo: !!room.isSolo,
   });
 }
 
@@ -119,10 +117,13 @@ function reveal(room) {
     const lock = room.lockedAnswers[p.id];
     const wasCorrect = !!(lock && lock.choice === q.correct);
     let earned = 0;
-    const getsSpeedBonus = !room.isSolo && wasCorrect && speedBonusId === p.id;
     if (wasCorrect) {
       earned += points;
-      if (getsSpeedBonus) earned += SPEED_BONUS;
+      if (speedBonusId === p.id && correctLocks.length === 1 && room.players.length > 1) {
+        earned += SPEED_BONUS;
+      } else if (speedBonusId === p.id) {
+        earned += SPEED_BONUS;
+      }
     }
     p.score += earned;
     return {
@@ -132,7 +133,7 @@ function reveal(room) {
       correct: wasCorrect,
       earned,
       newScore: p.score,
-      speedBonus: getsSpeedBonus,
+      speedBonus: speedBonusId === p.id && wasCorrect,
     };
   });
 
@@ -192,41 +193,12 @@ io.on('connection', (socket) => {
         usedIds: new Set(),
         timer: null,
         phase: 'waiting',
-        isSolo: false,
         createdAt: Date.now(),
       };
       rooms.set(code, room);
       currentRoom = room;
       socket.join(code);
       cb({ success: true, code, you: socket.id, players: publicScores(room) });
-    } catch (e) {
-      cb({ success: false, error: e.message });
-    }
-  });
-
-  socket.on('create-solo', ({ name }, cb) => {
-    try {
-      const cleanName = String(name || 'Player').trim().slice(0, 24) || 'Player';
-      const code = genCode();
-      const room = {
-        code,
-        players: [{ id: socket.id, name: cleanName, score: 0 }],
-        chooserIdx: 0,
-        roundNum: 0,
-        currentQuestion: null,
-        currentTier: null,
-        lockedAnswers: {},
-        usedIds: new Set(),
-        timer: null,
-        phase: 'waiting',
-        isSolo: true,
-        createdAt: Date.now(),
-      };
-      rooms.set(code, room);
-      currentRoom = room;
-      socket.join(code);
-      cb({ success: true, code, you: socket.id, players: publicScores(room), isSolo: true });
-      setTimeout(() => startNextRound(room), 400);
     } catch (e) {
       cb({ success: false, error: e.message });
     }
