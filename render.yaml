@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: the-office-trivia
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /healthz

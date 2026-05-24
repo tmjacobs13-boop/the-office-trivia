@@ -1,0 +1,72 @@
+{
+  "tier1": [
+    { "id": "t1-001", "q": "What is the name of the paper company on The Office?", "choices": ["Dunder Mifflin", "Schrute Farms Paper", "Sabre Stationery", "Pratt Paper Co."], "correct": 0 },
+    { "id": "t1-002", "q": "In what city is the main branch of The Office set?", "choices": ["Stamford", "Utica", "Scranton", "Buffalo"], "correct": 2 },
+    { "id": "t1-003", "q": "Who is the regional manager at the start of the series?", "choices": ["Andy Bernard", "Michael Scott", "Dwight Schrute", "Jim Halpert"], "correct": 1 },
+    { "id": "t1-004", "q": "What is Dwight's last name?", "choices": ["Schrute", "Halpert", "Bernard", "Malone"], "correct": 0 },
+    { "id": "t1-005", "q": "What does the company sell?", "choices": ["Office furniture", "Paper", "Printers", "Software"], "correct": 1 }
+  ],
+  "tier2": [
+    { "id": "t2-001", "q": "What is Jim's last name?", "choices": ["Halpert", "Hudson", "Howard", "Hannon"], "correct": 0 },
+    { "id": "t2-002", "q": "What is Pam's job at the start of the series?", "choices": ["Salesperson", "Accountant", "Receptionist", "HR rep"], "correct": 2 },
+    { "id": "t2-003", "q": "What instrument does Andy Bernard frequently play?", "choices": ["Banjo", "Accordion", "Trumpet", "Ukulele"], "correct": 0 },
+    { "id": "t2-004", "q": "What is the primary crop at Schrute Farms?", "choices": ["Corn", "Wheat", "Beets", "Pumpkins"], "correct": 2 },
+    { "id": "t2-005", "q": "What is the name of Kevin's cover band?", "choices": ["Scrantonicity", "Threat Level", "The Nard Dogs", "Kevin & The Newcomers"], "correct": 0 }
+  ],
+  "tier3": [
+    { "id": "t3-001", "q": "Which department does Toby work in?", "choices": ["Sales", "Accounting", "Human Resources", "Customer Service"], "correct": 2 },
+    { "id": "t3-002", "q": "What is the name of Michael's amateur film he spends years making?", "choices": ["Date Mike", "Threat Level Midnight", "Agent Michael Scarn", "The Scranton Strangler"], "correct": 1 },
+    { "id": "t3-003", "q": "Which branch does Jim transfer to in season 3?", "choices": ["Utica", "Nashua", "Stamford", "Buffalo"], "correct": 2 },
+    { "id": "t3-004", "q": "Which company buys Dunder Mifflin in season 6?", "choices": ["Staples", "Sabre", "Vance Refrigeration", "Prince Family Paper"], "correct": 1 },
+    { "id": "t3-005", "q": "Who is Pam's fiancé at the start of the series?", "choices": ["Jim", "Roy", "Mark", "Brian"], "correct": 1 }
+  ],
+  "tier4": [
+    { "id": "t4-001", "q": "What is Pam's maiden name?", "choices": ["Beesly", "Halpert", "Hannon", "Beesley"], "correct": 0 },
+    { "id": "t4-002", "q": "Where did Andy Bernard go to college?", "choices": ["Dartmouth", "Yale", "Cornell", "Princeton"], "correct": 2 },
+    { "id": "t4-003", "q": "Who is Phyllis's husband?", "choices": ["Bob Vance", "Stanley Hudson", "Kevin Malone", "Hank Tate"], "correct": 0 },
+    { "id": "t4-004", "q": "What is Jan's last name?", "choices": ["Levinson", "Bennett", "Flax", "California"], "correct": 0 },
+    { "id": "t4-005", "q": "Who plays Robert California?", "choices": ["Will Ferrell", "James Spader", "Idris Elba", "Kathy Bates"], "correct": 1 }
+  ],
+  "tier5": [
+    { "id": "t5-001", "q": "What does Michael burn his foot on in 'The Injury'?", "choices": ["Toaster", "Iron", "George Foreman grill", "Hair straightener"], "correct": 2 },
+    { "id": "t5-002", "q": "Who plays Andy Bernard?", "choices": ["Ed Helms", "John Krasinski", "Rainn Wilson", "B.J. Novak"], "correct": 0 },
+    { "id": "t5-003", "q": "What is Kelly's last name?", "choices": ["Kapoor", "Khan", "Kale", "Kishore"], "correct": 0 },
+    { "id": "t5-004", "q": "In what U.S. state is Cornell located?", "choices": ["Massachusetts", "Pennsylvania", "New York", "Connecticut"], "correct": 2 },
+    { "id": "t5-005", "q": "What is the name of Angela's cat that dies in season 5?", "choices": ["Bandit", "Sprinkles", "Mr. Ash", "Comstock"], "correct": 1 }
+  ],
+  "tier6": [
+    { "id": "t6-001", "q": "What is Holly Flax's role at Dunder Mifflin?", "choices": ["Sales", "Accounting", "HR rep", "Office administrator"], "correct": 2 },
+    { "id": "t6-002", "q": "What is the name of Phyllis's husband's business?", "choices": ["Vance Refrigeration", "Bob's HVAC", "Scranton Coolers", "Lackawanna Cooling"], "correct": 0 },
+    { "id": "t6-003", "q": "What does Andy call himself, his nickname?", "choices": ["Big Tuna", "The Nard Dog", "Prison Mike", "Date Mike"], "correct": 1 },
+    { "id": "t6-004", "q": "Who plays Michael Scott?", "choices": ["Steve Carell", "Ricky Gervais", "Will Ferrell", "Stephen Merchant"], "correct": 0 },
+    { "id": "t6-005", "q": "What unofficial title does Creed claim during the layoffs?", "choices": ["Office Administrator", "Quality Assurance", "Director of Sales", "Compliance Officer"], "correct": 1 }
+  ],
+  "tier7": [
+    { "id": "t7-001", "q": "Where does Michael move to be with Holly at the end of his arc?", "choices": ["Colorado", "Nashua", "Tallahassee", "Pittsburgh"], "correct": 0 },
+    { "id": "t7-002", "q": "Where do Jim and Pam first get married, before the formal ceremony?", "choices": ["Las Vegas", "Niagara Falls", "Atlantic City", "Scranton Courthouse"], "correct": 1 },
+    { "id": "t7-003", "q": "What is the name of Andy's college a cappella group?", "choices": ["Here Comes Treble", "The Bernardos", "Cornell Sharps", "The Big Red Chords"], "correct": 0 },
+    { "id": "t7-004", "q": "Who plays Erin Hannon?", "choices": ["Ellie Kemper", "Mindy Kaling", "Jenna Fischer", "Catherine Tate"], "correct": 0 },
+    { "id": "t7-005", "q": "Who is the CFO of Dunder Mifflin corporate that Michael frequently calls?", "choices": ["David Wallace", "Robert California", "Ryan Howard", "Jan Levinson"], "correct": 0 }
+  ],
+  "tier8": [
+    { "id": "t8-001", "q": "What is the name of the boom mic operator from the documentary crew who befriends Pam?", "choices": ["Brian", "Kyle", "Mark", "Trevor"], "correct": 0 },
+    { "id": "t8-002", "q": "What is the name of David Wallace's son?", "choices": ["Teddy", "Henry", "Walter Jr.", "Sam"], "correct": 0 },
+    { "id": "t8-003", "q": "Who plays Toby Flenderson?", "choices": ["Paul Lieberstein", "B.J. Novak", "Oscar Nuñez", "Brian Baumgartner"], "correct": 0 },
+    { "id": "t8-004", "q": "What is the name of Michael's improv comedy obsession that lands him in trouble in 'Initiation'?", "choices": ["Threat Level Midnight", "Date Mike", "Prison Mike", "Michael Scarn"], "correct": 3 },
+    { "id": "t8-005", "q": "Who does Pam paint a watercolor of the office building for?", "choices": ["Michael", "Jim", "David Wallace", "Roy"], "correct": 0 }
+  ],
+  "tier9": [
+    { "id": "t9-001", "q": "What does Dwight purchase from Stanley for $5?", "choices": ["A bobblehead", "His pension", "His desk", "Stanley's lunch order"], "correct": 1 },
+    { "id": "t9-002", "q": "What city in Florida do several office workers travel to for the Sabre store launch?", "choices": ["Miami", "Orlando", "Tallahassee", "Jacksonville"], "correct": 2 },
+    { "id": "t9-003", "q": "What is the name of the documentary that the series-within-a-series is finally aired as?", "choices": ["The Office: An American Workplace", "Scranton: A Year at Dunder Mifflin", "The Office", "American Workplace"], "correct": 0 },
+    { "id": "t9-004", "q": "Who plays the part of Agent Michael Scarn's wife in 'Threat Level Midnight'?", "choices": ["Pam", "Holly", "Jan", "Karen"], "correct": 2 },
+    { "id": "t9-005", "q": "What is Andy's father's first name?", "choices": ["Walter", "Edward", "Robert", "Charles"], "correct": 0 }
+  ],
+  "tier10": [
+    { "id": "t10-001", "q": "What is Robert California's birth name, before he changed it?", "choices": ["Bob Kazamakis", "Robert Lipton", "Bobby Ray", "Robert Dunder"], "correct": 0 },
+    { "id": "t10-002", "q": "In the cold open where Jim impersonates Dwight, what does he buy from Staples to complete the look?", "choices": ["A short-sleeved dress shirt and calculator watch", "Glasses and a clip-on tie", "Mustard yellow shirt and pleated pants", "A bobblehead and stapler"], "correct": 0 },
+    { "id": "t10-003", "q": "What is the name of Dwight's great-grandfather mentioned in 'Money'?", "choices": ["Dwide Schrude", "Mose Schrute", "Heinrich Schrute", "Hans Schrute"], "correct": 0 },
+    { "id": "t10-004", "q": "Whose desk is moved into the men's bathroom by Jim as a prank?", "choices": ["Dwight's", "Andy's", "Kevin's", "Stanley's"], "correct": 0 },
+    { "id": "t10-005", "q": "What is the title of the final episode of the series?", "choices": ["Goodbye, Michael", "Finale", "A.A.R.M.", "Livin' the Dream"], "correct": 1 }
+  ]
+}

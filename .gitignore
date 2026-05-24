@@ -1,0 +1,10 @@
+node_modules/
+.claude/
+
+npm-debug.log*
+.DS_Store
+.env
+.env.local
+_questions_drafts/
+.vscode/
+.idea/

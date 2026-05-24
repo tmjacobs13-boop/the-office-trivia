@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Office Trivia</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-main">THE OFFICE</span>
+    <span class="brand-sub">TRIVIA SHOWDOWN</span>
+  </div>
+  <div id="room-indicator" class="room-indicator hidden">
+    Room <span id="room-code-display"></span>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- LANDING -->
+  <section id="screen-landing" class="screen">
+    <div class="card">
+      <h1>Welcome to Dunder Mifflin Trivia</h1>
+      <p class="muted">A two-player trivia battle. Pick your tier. Race to 500 points. Don't be a Toby.</p>
+      <label class="field">
+        <span>Your name</span>
+        <input id="name-input" type="text" maxlength="24" placeholder="e.g. Michael" />
+      </label>
+      <div class="row">
+        <button id="btn-create" class="btn primary">Create Room</button>
+        <span class="divider">or</span>
+        <div class="join-group">
+          <input id="join-code-input" type="text" maxlength="4" placeholder="CODE" />
+          <button id="btn-join" class="btn">Join</button>
+        </div>
+      </div>
+      <p id="landing-error" class="error hidden"></p>
+    </div>
+    <p class="footer-note">"I'm not superstitious, but I am a little stitious." — Michael Scott</p>
+  </section>
+
+  <!-- WAITING ROOM -->
+  <section id="screen-waiting" class="screen hidden">
+    <div class="card">
+      <h1>Waiting for Player 2</h1>
+      <p class="muted">Share this code with your opponent:</p>
+      <div class="code-display" id="big-code"></div>
+      <button id="btn-copy-code" class="btn">Copy code</button>
+      <div class="players-preview" id="players-preview"></div>
+      <p class="muted small">Game starts as soon as they join.</p>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen hidden">
+    <div class="scoreboard">
+      <div class="score-card" id="score-you">
+        <div class="score-name">You</div>
+        <div class="score-value">0</div>
+      </div>
+      <div class="round-info">
+        <div class="round-label">ROUND</div>
+        <div class="round-num" id="round-num">1</div>
+        <div class="round-label">First to 500</div>
+      </div>
+      <div class="score-card" id="score-opp">
+        <div class="score-name">Opponent</div>
+        <div class="score-value">0</div>
+      </div>
+    </div>
+
+    <!-- Tier-pick phase -->
+    <div id="phase-tier-pick" class="phase hidden">
+      <div id="tier-pick-you" class="hidden">
+        <h2>Your turn to pick a tier</h2>
+        <p class="muted">Higher tier = more points, but harder.</p>
+        <div class="tier-grid">
+          <button class="tier-btn" data-tier="1">1<span>10 pts</span></button>
+          <button class="tier-btn" data-tier="2">2<span>20 pts</span></button>
+          <button class="tier-btn" data-tier="3">3<span>30 pts</span></button>
+          <button class="tier-btn" data-tier="4">4<span>40 pts</span></button>
+          <button class="tier-btn" data-tier="5">5<span>50 pts</span></button>
+          <button class="tier-btn" data-tier="6">6<span>60 pts</span></button>
+          <button class="tier-btn" data-tier="7">7<span>70 pts</span></button>
+          <button class="tier-btn" data-tier="8">8<span>80 pts</span></button>
+          <button class="tier-btn" data-tier="9">9<span>90 pts</span></button>
+          <button class="tier-btn" data-tier="10">10<span>100 pts</span></button>
+        </div>
+      </div>
+      <div id="tier-pick-other" class="hidden waiting-block">
+        <div class="spinner"></div>
+        <p><span id="chooser-name">Opponent</span> is picking a tier&hellip;</p>
+      </div>
+    </div>
+
+    <!-- Question phase -->
+    <div id="phase-question" class="phase hidden">
+      <div class="question-meta">
+        <span class="tier-badge" id="q-tier-badge">TIER 1 • 10 PTS</span>
+        <span class="timer" id="q-timer">30</span>
+      </div>
+      <h2 class="question-text" id="question-text"></h2>
+      <div class="choices" id="choices"></div>
+      <div class="lock-status" id="lock-status"></div>
+    </div>
+
+    <!-- Reveal phase -->
+    <div id="phase-reveal" class="phase hidden">
+      <h2 id="reveal-headline"></h2>
+      <p class="muted" id="reveal-correct"></p>
+      <div class="reveal-results" id="reveal-results"></div>
+      <p class="muted small">Next round in a moment&hellip;</p>
+    </div>
+  </section>
+
+  <!-- GAME OVER -->
+  <section id="screen-gameover" class="screen hidden">
+    <div class="card">
+      <h1 id="gameover-headline">Winner!</h1>
+      <p class="muted" id="gameover-tagline"></p>
+      <div class="final-scores" id="final-scores"></div>
+      <button id="btn-play-again" class="btn primary">Play Again</button>
+      <button id="btn-leave" class="btn">Leave</button>
+    </div>
+  </section>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+</body>
+</html>
